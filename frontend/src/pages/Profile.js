@@ -1,11 +1,17 @@
 
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Card, CardContent, Avatar, Button, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Card, CardContent, Avatar, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+
 
 export default function Profile({ token }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [editOpen, setEditOpen] = useState(false);
+    const [editName, setEditName] = useState('');
+    const [editEmail, setEditEmail] = useState('');
+    const [editLoading, setEditLoading] = useState(false);
+    const [editError, setEditError] = useState('');
 
     useEffect(() => {
         async function fetchProfile() {
@@ -26,6 +32,39 @@ export default function Profile({ token }) {
         fetchProfile();
     }, [token]);
 
+    const handleEditOpen = () => {
+        setEditName(user?.name || '');
+        setEditEmail(user?.email || '');
+        setEditError('');
+        setEditOpen(true);
+    };
+
+    const handleEditClose = () => {
+        setEditOpen(false);
+    };
+
+    const handleEditSave = async () => {
+        setEditLoading(true);
+        setEditError('');
+        try {
+            const res = await fetch('http://localhost:5000/api/auth/me', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: 'Bearer ' + token
+                },
+                body: JSON.stringify({ name: editName, email: editEmail })
+            });
+            if (!res.ok) throw new Error('Failed to update profile');
+            const data = await res.json();
+            setUser(data);
+            setEditOpen(false);
+        } catch (err) {
+            setEditError('Could not update profile.');
+        }
+        setEditLoading(false);
+    };
+
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}><CircularProgress /></Box>;
     if (error) return <Alert severity="error">{error}</Alert>;
 
@@ -39,9 +78,35 @@ export default function Profile({ token }) {
                     </Avatar>
                     <Typography variant="h6">{user?.name}</Typography>
                     <Typography variant="body2" color="text.secondary">{user?.email}</Typography>
-                    <Button variant="outlined" sx={{ mt: 2 }}>Edit Profile</Button>
+                    <Button variant="outlined" sx={{ mt: 2 }} onClick={handleEditOpen}>Edit Profile</Button>
                 </CardContent>
             </Card>
+            <Dialog open={editOpen} onClose={handleEditClose}>
+                <DialogTitle>Edit Profile</DialogTitle>
+                <DialogContent sx={{ minWidth: 300 }}>
+                    <TextField
+                        margin="normal"
+                        label="Name"
+                        fullWidth
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                    />
+                    <TextField
+                        margin="normal"
+                        label="Email"
+                        fullWidth
+                        value={editEmail}
+                        onChange={e => setEditEmail(e.target.value)}
+                    />
+                    {editError && <Alert severity="error" sx={{ mt: 2 }}>{editError}</Alert>}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleEditClose} disabled={editLoading}>Cancel</Button>
+                    <Button onClick={handleEditSave} variant="contained" disabled={editLoading}>
+                        {editLoading ? <CircularProgress size={20} /> : 'Save'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }
