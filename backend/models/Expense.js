@@ -1,16 +1,20 @@
-import mongoose from "mongoose";
 
-const expenseSchema = new mongoose.Schema(
-    {
-        groupId: { type: mongoose.Schema.Types.ObjectId, ref: "Group", required: true },
-        description: { type: String, required: true },
-        amount: { type: Number, required: true, min: 0 },
-        paidBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-        category: { type: String, enum: ["Food", "Travel", "Utilities", "Other"], default: "Other" },
-        // Map of userId -> share amount
-        split: { type: Map, of: Number, required: true },
-    },
-    { timestamps: true }
-);
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-export default mongoose.model("Expense", expenseSchema);
+const SplitSchema = new Schema({
+  user: { type: Schema.Types.ObjectId, ref: 'User' },
+  share: { type: Number }, // amount owed by this user
+}, { _id: false });
+
+const ExpenseSchema = new Schema({
+  group: { type: Schema.Types.ObjectId, ref: 'Group', required: true },
+  description: String,
+  amount: { type: Number, required: true },
+  payer: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  splits: [SplitSchema],
+  category: String,
+  date: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+module.exports = mongoose.model('Expense', ExpenseSchema);

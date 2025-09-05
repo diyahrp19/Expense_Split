@@ -1,12 +1,12 @@
-import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema(
-    {
-        firebaseId: { type: String, index: true }, // optional for MVP
-        name: String,
-        email: { type: String, unique: true, sparse: true },
-    },
-    { timestamps: true }
-);
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-export default mongoose.model("User", userSchema);
+const UserSchema = new Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  groups: [{ type: Schema.Types.ObjectId, ref: 'Group' }],
+}, { timestamps: true });
+
+module.exports = mongoose.model('User', UserSchema);
